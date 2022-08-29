@@ -1010,6 +1010,7 @@ def main():
         # returns voters and candidates in scenario where RCV polarization > normal
         find_voters_candidates_for_RCV_greater(int(args[1]), int(args[2]))
         # num voters, num candidates
+        # TEST
     else: # Simulate a bunch, graph
         graph_results(int(args[0]), int(args[1]), int(args[2])) #num voters, num candidates, num run
 
