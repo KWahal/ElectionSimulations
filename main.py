@@ -961,6 +961,54 @@ def print_candidates_RCV_greater_choose(num_candidates, num_left_candidates):
     else:
         print_candidates_RCV_greater_choose(num_candidates, num_left_candidates)
 
+# Helper to plot a line based on slope and intercent
+def abline(slope, intercept):
+    axes = plt.gca()
+    x_vals = np.array(axes.get_xlim())
+    y_vals = intercept + slope * x_vals
+    plt.plot(x_vals, y_vals, '--')
+"""
+This function allows you to choose the winner of each election and compute the result.
+"""
+def choose_winners(num_candidates, num_run, num_left_candidates, winner_choice_CES, winner_choice_RCV):
+    x = []
+    y = []
+
+    for i in range(num_run):
+        candidates = gen_candidates_uniform(num_candidates)
+        left_candidates = []
+
+        for j in range(len(candidates)):
+            if candidates[j] <= 10:
+                left_candidates.append(candidates[j])
+        if len(left_candidates) == num_left_candidates:
+            CES_system = find_normal_winner_uniform(candidates)
+            RCV_system = find_RCV_winner_uniform(candidates)
+            CES_winner = CES_system[0]
+            RCV_winner = RCV_system[0]
+
+            if CES_winner == candidates[winner_choice_CES] and RCV_winner == candidates[winner_choice_RCV]:
+                x.append(CES_system[1])
+                y.append(RCV_system[1])
+
+    plt.scatter(x, y, color="purple")
+
+    # x-axis label
+    plt.xlabel('Normal Election Polarization')
+    # frequency label
+    plt.ylabel('Ranked Choice Voting Polarization')
+    # plot title
+    plt.xlim(0, 10)
+    plt.ylim(0, 10)
+    abline(1, 0)
+    plt.title('RCV vs. CES Polarization w/ ' + str(num_left_candidates) + 'left candidates, ' + str(winner_choice_CES) + 'CES winner, ' + str(winner_choice_RCV) + 'RCV_winner')
+    # showing legend
+
+    # function to show the plot
+    plt.show()
+
+
+
 def main():
     # First input is number of voters, second is number of candidates
     args = sys.argv[1:]
@@ -1010,7 +1058,11 @@ def main():
         # returns voters and candidates in scenario where RCV polarization > normal
         find_voters_candidates_for_RCV_greater(int(args[1]), int(args[2]))
         # num voters, num candidates
-        # TEST
+    elif str(args[0]) == "choose-winners":
+        # Returns scatterplot in scenario where you choose which candidate wins and num left candidates
+        # Num candidates, num run, num left candidates, winner_choice_CES, winner_choice_RCV
+        # winner choice CES starts at 0, represents where the candidates is (e.g. 0 means most far left candidate)
+        choose_winners(int(args[1]), int(args[2]), int(args[3]), int(args[4]), int(args[5]))
     else: # Simulate a bunch, graph
         graph_results(int(args[0]), int(args[1]), int(args[2])) #num voters, num candidates, num run
 
