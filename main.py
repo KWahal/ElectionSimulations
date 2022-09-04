@@ -1007,6 +1007,25 @@ def choose_winners(num_candidates, num_run, num_left_candidates, winner_choice_C
     # function to show the plot
     plt.show()
 
+def calculate_percent_uniform(num_candidates, num_run):
+    RCV_winners = 0
+
+    for i in range(num_run):
+        candidates = gen_candidates_uniform(num_candidates)
+        CES_system = find_normal_winner_uniform(candidates)
+        RCV_system = find_RCV_winner_uniform(candidates)
+
+        CES_polarization = CES_system[1]
+        rcv_polarization = RCV_system[1]
+
+        if rcv_polarization > CES_polarization:
+            RCV_winners += 1
+
+    total_percent = RCV_winners/num_run
+
+    print("The percent of times that RCV performs worse is " + str(total_percent) + "%")
+    return total_percent
+
 
 
 def main():
@@ -1063,6 +1082,10 @@ def main():
         # Num candidates, num run, num left candidates, winner_choice_CES, winner_choice_RCV
         # winner choice CES starts at 0, represents where the candidates is (e.g. 0 means most far left candidate)
         choose_winners(int(args[1]), int(args[2]), int(args[3]), int(args[4]), int(args[5]))
+    elif str(args[0]) == "percents":
+        # Prints percent of times RCV does worse
+        # num candidates, num run
+        calculate_percent_uniform(int(args[1]), int(args[2]))
     else: # Simulate a bunch, graph
         graph_results(int(args[0]), int(args[1]), int(args[2])) #num voters, num candidates, num run
 
