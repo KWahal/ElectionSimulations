@@ -1,3 +1,14 @@
+"""
+This file assumes that voters are uniformly distributed across an interval. There is thus no selection of voters.
+The file allows you to choose the number of candidates and randomly generates candidates. It calculates the winners of
+a standard election (primary, first-past-the-post), and a ranked-choice voting election, as well as the extremism
+levels of the winning candidates, using a uniform distribution.
+
+It provides the option to provide a variety of visualizations, such as the proportion of voters that hold a particular
+ranking system for candidates and scatter plots comparing the extremism levels for the two types of elections.
+If you choose, it is relatively easy to modify this code such that you manually decide the candidates.
+"""
+
 import numpy as np
 import math
 from random import seed

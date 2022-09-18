@@ -4,7 +4,7 @@ and candidates. It then calculates the winner of the election under a primary sy
 well as the extremism levels of the winning candidates.
 
 It provides the option to provide a variety of visualizations, such as the proportion of voters that hold a particular
-ranking system for candidates and scatterplots comparing the extremism levels for the two types of elections.
+ranking system for candidates and scatter plots comparing the extremism levels for the two types of elections.
 If you choose, it is relatively easy to modify this code such that you manually decide the candidates or voters.
 
 This simulation code is based on a discrete number of voters.
