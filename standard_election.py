@@ -430,16 +430,9 @@ def graph_results(num_voters, num_candidates, num_run):
         y.append(rcv_result[1])
 
     plt.scatter(x, y,  color="purple")
-
-    # x-axis label
     plt.xlabel('Normal Election Polarization')
-    # frequency label
     plt.ylabel('Ranked Choice Voting Polarization')
-    # plot title
     plt.title('RCV vs. First-Past-The-Post Primary Polarization')
-    # showing legend
-
-    # function to show the plot
     plt.show()
 
 """
@@ -525,17 +518,10 @@ def graph_specific_polarization(num_voters, num_candidates, num_run, num_left_ca
             y.append(rcv_result[1])
 
     plt.scatter(x, y, color="purple")
-
-    # x-axis label
     plt.xlabel('Normal Election Polarization')
-    # frequency label
     plt.ylabel('Ranked Choice Voting Polarization')
-    # plot title
     plt.title('RCV vs. Normal Polarization with ' + str(num_left_candidates) + ' left candidates and ' +
               str(num_candidates) + ' candidates')
-    # showing legend
-
-    # function to show the plot
     plt.show()
 
 """
