@@ -8,4 +8,4 @@ This repo contains files to compute and visualize winners and extremism levels o
 
 ```standard_election.py``` uses a given number of randomly generated voters.
 
-This files are used to inform a paper on ranked-choice voting. 
+These files are used to inform a paper on ranked-choice voting. 
