@@ -1,3 +1,5 @@
+import math
+
 from scipy.interpolate import UnivariateSpline
 from scipy.stats import norm, uniform
 import matplotlib.pyplot as plt
@@ -6,15 +8,14 @@ import random
 
 RANDOMIZE_CANDIDATES = True
 NUM_CANDIDATES = 4
-leftCandidates = 2
-rightCandidates = 2
+LEFT_CANDIDATES = 2
+RIGHT_CANDIDATES = 2
 
-TRIALS = 500000
-TRIALS_PER_DISTRIBUTION = 10
 NUM_GRAPH_SECTIONS = 50000000
 NUM_SPLINE_SECTIONS = 10
 
 GRAPH_SCALE = 1
+
 
 def getVoterProportions(prefixSum, candidates):
     leftBound = 0
@@ -33,14 +34,14 @@ def findSimpleElectionWinnerValue(prefixSum, candidates):
     return candidates[np.argmax(proportions)]
 
 
-def findCESWinnerValue(prefixSum, medianLoc, candidates):
+def findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates):
     winners = []
     if leftCandidates > 0:
         winners.append(findSimpleElectionWinnerValue(prefixSum[:medianLoc], candidates[:leftCandidates]))
 
     if rightCandidates > 0:
         winners.append(medianLoc + findSimpleElectionWinnerValue(prefixSum[medianLoc + 1:],
-                                                         [candidate - medianLoc for candidate in candidates[leftCandidates:]]))
+                                                                 [candidate - medianLoc for candidate in candidates[leftCandidates:]]))
 
     if len(winners) == 1:
         return winners[0]
@@ -66,73 +67,78 @@ def randomSplineDistribution():
     yValues = np.random.rand(NUM_SPLINE_SECTIONS)
     return UnivariateSpline(xValues, yValues, k=4)
 
+
 def randomNormalDistribution():
     return lambda distribution: norm.pdf(distribution, random.random() * 0.4)
 
-def normalDistribution():
-    return lambda distribution: norm.pdf(distribution, loc=0.5, scale=0.2)
+
+def normalDistribution(dLoc=0.5, dScale=0.2):
+    return lambda distribution: norm.pdf(distribution, loc=dLoc, scale=dScale)
+
 
 def uniformDistribution():
     return lambda distribution: uniform.pdf(distribution)
 
 
-def runGeneralDistributionVoters():
-    global NUM_CANDIDATES, leftCandidates, rightCandidates
-
+def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000,
+                                 numCandidates=NUM_CANDIDATES, randomizeCandidates=RANDOMIZE_CANDIDATES,
+                                 leftCandidates=LEFT_CANDIDATES, rightCandidates=RIGHT_CANDIDATES):
     CESPolarization = []
     RCVPolarization = []
 
-    distribution = normalDistribution()
-    # distribution = uniformDistribution()
+    distribution = normalDistribution(dLoc=loc, dScale=scale)
     intervals = np.linspace(0, 1, num=NUM_GRAPH_SECTIONS)
     intervalHeights = distribution(intervals)
 
     prefixSum = np.append([0], np.cumsum(intervalHeights))
     medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
 
-    for trial in range(int(TRIALS / TRIALS_PER_DISTRIBUTION)):
-        # distribution = randomNormalDistribution()
-        # intervals = np.linspace(0, 1, num=NUM_GRAPH_SECTIONS)
-        # intervalHeights = distribution(intervals)
-        #
-        # prefixSum = np.append([0], np.cumsum(intervalHeights))
-        # medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
+    for trial in range(trials):
+        # Sorted list of candidates
+        candidates = []
 
-        for trialDist in range(TRIALS_PER_DISTRIBUTION):
-            # Ordered from left, moderate right, extreme right (index of candidates)
-            candidates = []
+        if RANDOMIZE_CANDIDATES:
+            # Randomly pick candidates from voter distribution
+            while len(candidates) < NUM_CANDIDATES:
+                randomCandidate = random.randint(0, math.floor(prefixSum[-1]) * 5000) / 5000.
+                candidateLocation = np.searchsorted(prefixSum, randomCandidate)
 
-            if RANDOMIZE_CANDIDATES:
-                while len(candidates) < NUM_CANDIDATES:
-                    randomCandidate = random.randrange(1, NUM_GRAPH_SECTIONS)
-                    if randomCandidate != medianLoc:
-                        candidates.append(randomCandidate)
+                if candidateLocation != medianLoc:
+                    candidates.append(candidateLocation)
 
-                candidates.sort()
+            candidates.sort()
 
-                # Count left and right candidates
-                leftCandidates = 0
-                rightCandidates = 0
-                for candidate in candidates:
-                    if candidate < medianLoc:
-                        leftCandidates += 1
-                    else:
-                        rightCandidates += 1
+            # Count left and right candidates
+            leftCandidates = 0
+            rightCandidates = 0
+            for candidate in candidates:
+                if candidate < medianLoc:
+                    leftCandidates += 1
+                else:
+                    rightCandidates += 1
+        else:
+            # Generate random left candidates
+            while len(candidates) < leftCandidates:
+                candidates.append(random.randrange(1, medianLoc))
 
-            else:
-                while len(candidates) < leftCandidates:
-                    candidates.append(random.randrange(1, medianLoc))
+            # Generate random right candidates
+            while len(candidates) < rightCandidates:
+                candidates.append(random.randrange(medianLoc + 1, NUM_GRAPH_SECTIONS))
 
-                while len(candidates) < rightCandidates:
-                    candidates.append(random.randrange(medianLoc + 1, NUM_GRAPH_SECTIONS))
+            candidates.sort()
 
-                candidates.sort()
+        # Find election winners
+        CESWinner = findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates)
+        RCVWinner = findRCVWinnerValue(prefixSum, candidates)
 
-            CESWinner = findCESWinnerValue(prefixSum, medianLoc, candidates)
-            RCVWinner = findRCVWinnerValue(prefixSum, candidates)
+        CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / NUM_GRAPH_SECTIONS)
+        RCVPolarization.append(abs(RCVWinner - medianLoc) * GRAPH_SCALE / NUM_GRAPH_SECTIONS)
 
-            CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / NUM_GRAPH_SECTIONS)
-            RCVPolarization.append(abs(RCVWinner - medianLoc) * GRAPH_SCALE / NUM_GRAPH_SECTIONS)
+    return CESPolarization, RCVPolarization
+
+
+def runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=500000):
+    CESPolarization, RCVPolarization = runGeneralDistributionVoters(loc=nLoc, scale=nScale, trials=nTrials)
 
     # x-axis label
     plt.xlabel('Current Election System Polarization')
@@ -149,7 +155,7 @@ def runGeneralDistributionVoters():
     plt.scatter(CESPolarization, RCVPolarization, color='purple')
     plt.show()
 
-    print(f'Percentage of trials with better RCV Performance: {100 * float(numGreater)/len(CESPolarization)}')
+    print(f'Percentage of trials with better RCV Performance: {100 * float(numGreater) / len(CESPolarization)}')
 
 
-runGeneralDistributionVoters()
+runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=1000)
