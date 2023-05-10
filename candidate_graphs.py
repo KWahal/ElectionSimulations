@@ -1,17 +1,20 @@
 import matplotlib.pyplot as plt
 import general_distributions as dist
+from scipy.stats import norm
 import numpy as np
 
 NUM_MEANS = 5
 NUM_DEVIATIONS = 5
 TRIALS = 50000
 NUM_TO_SHOW = 1000
-NUM_CANDIDATES = 6
+NUM_CANDIDATES = 4
 
 ABOVE_COLOR = 'red'
 EQUAL_COLOR = 'yellow'
 BELOW_COLOR = 'green'
 
+DISPLAY_DISTRIBUTION_MODE = False
+NUM_GRAPH_SECTIONS = 50000
 
 def percentage(val, total):
     return round(100 * float(val)/total, 2)
@@ -63,6 +66,16 @@ def showGraphArray():
 
     for i, mean in enumerate(means):
         for j, deviation in enumerate(deviations):
+            if DISPLAY_DISTRIBUTION_MODE:
+                intervals = np.linspace(0, 1, num=NUM_GRAPH_SECTIONS)
+                axis[i, j].plot(intervals, norm.pdf(intervals, loc=mean, scale=deviation))
+                axis[i, j].set_ylim(0, 2)
+                axis[i, j].set_xlim(0, 1)
+                axis[i, j].tick_params(axis='y', which='both', bottom=False,
+                                       left=False, right=False, top=False,
+                                       labelbottom=False, labelleft=False)
+                continue
+
             CESPol, RCVPol = \
                 dist.runGeneralDistributionVoters(loc=mean, scale=deviation, trials=TRIALS, numCandidates=NUM_CANDIDATES)
 
@@ -76,7 +89,6 @@ def showGraphArray():
                                    left=False, right=False, top=False,
                                    labelbottom=False, labelleft=False)
 
-            # axis[i, j].scatter(CESPol, RCVPol, color=colors)
             axis[i, j].scatter(aboveList[0], aboveList[1], color=ABOVE_COLOR, label=f"{percentage(above, TRIALS)}%")
             axis[i, j].scatter(onList[0], onList[1], color=EQUAL_COLOR, label=f"{percentage(on, TRIALS)}%")
             axis[i, j].scatter(belowList[0], belowList[1], color=BELOW_COLOR, label=f"{percentage(below, TRIALS)}%")

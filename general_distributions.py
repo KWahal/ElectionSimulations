@@ -66,7 +66,7 @@ def findRCVWinnerValue(prefixSum, candidates):
 def randomSplineDistribution():
     xValues = np.linspace(0, 1, num=NUM_SPLINE_SECTIONS)
     yValues = np.random.rand(NUM_SPLINE_SECTIONS)
-    return UnivariateSpline(xValues, yValues, k=4)
+    return UnivariateSpline(xValues, yValues, k=5)
 
 
 def randomNormalDistribution():
@@ -81,20 +81,33 @@ def uniformDistribution():
     return lambda distribution: uniform.pdf(distribution)
 
 
-def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000,
+def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, graphSections=NUM_GRAPH_SECTIONS,
                                  numCandidates=NUM_CANDIDATES, randomizeCandidates=RANDOMIZE_CANDIDATES,
-                                 leftCandidates=LEFT_CANDIDATES, rightCandidates=RIGHT_CANDIDATES):
+                                 leftCandidates=LEFT_CANDIDATES, rightCandidates=RIGHT_CANDIDATES, isNormal=True,
+                                 distributionToUse=normalDistribution, recreateDistribution=False, trialsPerRecreation=100):
     CESPolarization = []
     RCVPolarization = []
 
-    distribution = normalDistribution(dLoc=loc, dScale=scale)
-    intervals = np.linspace(0, 1, num=NUM_GRAPH_SECTIONS)
+    if isNormal:
+        distribution = distributionToUse(dLoc=loc, dScale=scale)
+    else:
+        distribution = distributionToUse()
+
+    intervals = np.linspace(0, 1, num=graphSections)
     intervalHeights = distribution(intervals)
 
     prefixSum = np.append([0], np.cumsum(intervalHeights))
     medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
 
     for trial in range(trials):
+        # Recreate distribution if necessary
+        if recreateDistribution and trial % trialsPerRecreation == 0:
+            distribution = distributionToUse()
+            intervalHeights = distribution(intervals)
+
+            prefixSum = np.append([0], np.cumsum(intervalHeights))
+            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
+
         # Sorted list of candidates
         candidates = []
 
@@ -124,7 +137,7 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000,
 
             # Generate random right candidates
             while len(candidates) < rightCandidates:
-                candidates.append(random.randrange(medianLoc + 1, NUM_GRAPH_SECTIONS))
+                candidates.append(random.randrange(medianLoc + 1, graphSections))
 
             candidates.sort()
 
@@ -132,8 +145,8 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000,
         CESWinner = findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates)
         RCVWinner = findRCVWinnerValue(prefixSum, candidates)
 
-        CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / NUM_GRAPH_SECTIONS)
-        RCVPolarization.append(abs(RCVWinner - medianLoc) * GRAPH_SCALE / NUM_GRAPH_SECTIONS)
+        CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / graphSections)
+        RCVPolarization.append(abs(RCVWinner - medianLoc) * GRAPH_SCALE / graphSections)
 
     return CESPolarization, RCVPolarization
 
