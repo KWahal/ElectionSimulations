@@ -11,7 +11,7 @@ NUM_CANDIDATES = 4
 LEFT_CANDIDATES = 2
 RIGHT_CANDIDATES = 2
 
-NUM_GRAPH_SECTIONS = 50000000
+NUM_GRAPH_SECTIONS = 5000000
 NUM_SPLINE_SECTIONS = 10
 
 GRAPH_SCALE = 1
@@ -22,7 +22,8 @@ def getVoterProportions(prefixSum, candidates):
     proportions = []
 
     for i, candidate in enumerate(candidates):
-        rightBound = round((candidate + candidates[i + 1]) / 2 if i != len(candidates) - 1 else len(prefixSum) - 1)
+        rightBound = round((candidate + candidates[i + 1]) / 2
+                           if i != len(candidates) - 1 else len(prefixSum) - 1)
         proportions.append(prefixSum[rightBound] - prefixSum[leftBound])
         leftBound = rightBound + 1
 
@@ -97,9 +98,9 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000,
         # Sorted list of candidates
         candidates = []
 
-        if RANDOMIZE_CANDIDATES:
+        if randomizeCandidates:
             # Randomly pick candidates from voter distribution
-            while len(candidates) < NUM_CANDIDATES:
+            while len(candidates) < numCandidates:
                 randomCandidate = random.randint(0, math.floor(prefixSum[-1]) * 5000) / 5000.
                 candidateLocation = np.searchsorted(prefixSum, randomCandidate)
 
@@ -158,4 +159,4 @@ def runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=500000):
     print(f'Percentage of trials with better RCV Performance: {100 * float(numGreater) / len(CESPolarization)}')
 
 
-runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=1000)
+# runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=1000000)
