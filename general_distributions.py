@@ -5,6 +5,7 @@ from scipy.stats import norm, uniform
 import matplotlib.pyplot as plt
 import numpy as np
 import random
+from tqdm import tqdm
 
 RANDOMIZE_CANDIDATES = True
 NUM_CANDIDATES = 4
@@ -99,7 +100,7 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, graphSection
     prefixSum = np.append([0], np.cumsum(intervalHeights))
     medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
 
-    for trial in range(trials):
+    for trial in tqdm(range(trials)):
         # Recreate distribution if necessary
         if recreateDistribution and trial % trialsPerRecreation == 0:
             distribution = distributionToUse()
