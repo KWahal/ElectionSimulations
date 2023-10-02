@@ -1,6 +1,8 @@
 from general_distributions import runGeneralDistributionVoters
 from candidate_graphs import computeStatistics
+from spline_graphs import run_spline_dist
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 
 def create_one_graph():
@@ -89,4 +91,57 @@ def create_full_graph():
     plt.savefig('all_graphs.png')
     plt.show()
 
-create_full_graph()
+TRIALS = 5000
+def create_spline_graph():
+    tied = []
+    betterOrEqual = []
+    vals = []
+
+    for i in range(3, 101):
+
+        better_or_equal_candidate_specific = 0
+        tied_candidate_specific = 0
+
+        for j in tqdm(range(TRIALS)):
+
+            CES, RCV = run_spline_dist(i, 1)
+            if RCV <= CES:
+                better_or_equal_candidate_specific += 1
+            
+            if RCV == CES:
+                tied_candidate_specific += 1
+
+       # total = len(CES)
+      #  tied.append(float(on) / total)
+      #  betterOrEqual.append((below + on) / float(total))
+        vals.append(i)
+
+        betterOrEqual.append((better_or_equal_candidate_specific/TRIALS))
+        tied.append(tied_candidate_specific/TRIALS)
+        print(betterOrEqual)
+
+        print(tied)
+
+        print(f'For {i} candidates, RCV is better or equal {betterOrEqual[i-3]} percent of the time')
+        print(f'Computed stats for {i}')
+
+    plt.xlabel("Number of Candidates in Election")
+    plt.ylabel("Share of Elections")
+
+    #gray #333333
+
+    color_one = "#E39FF6"
+    color_two = "#9867C5"
+
+    plt.fill_between(vals, betterOrEqual, color=color_one, alpha=0.4, label="No Worse")
+    plt.fill_between(vals, tied, color=color_two, alpha=0.6, label="Tied")
+
+    plt.scatter(vals, betterOrEqual, color=color_one)
+    plt.scatter(vals, tied, color=color_two)
+
+    # plt.scatter(vals, betterOrEqual, label="No Worse", color=color_one)
+    # plt.scatter(vals, tied, label="Tied", color=color_two)
+    plt.legend()
+    plt.show()
+    plt.savefig('spline_graph.png')
+create_spline_graph()
