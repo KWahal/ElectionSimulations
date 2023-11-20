@@ -13,7 +13,6 @@ NUM_GRAPH_SECTIONS = 50000
 DISPLAY_EXAMPLE_GRAPH = False
 
 def run_spline_dist(NUM_CANDIDATES, TRIALS):
-
     if DISPLAY_EXAMPLE_GRAPH:
         displayDist = dist.randomSplineDistribution()
         intervals = np.linspace(0, 1, num=NUM_GRAPH_SECTIONS)
