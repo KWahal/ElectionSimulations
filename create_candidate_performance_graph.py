@@ -144,4 +144,5 @@ def create_spline_graph():
     plt.legend()
     plt.show()
     plt.savefig('spline_graph.png')
+
 create_spline_graph()

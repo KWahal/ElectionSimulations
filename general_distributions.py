@@ -107,7 +107,9 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, graphSection
             intervalHeights = distribution(intervals)
 
             prefixSum = np.append([0], np.cumsum(intervalHeights))
-            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
+
+            percentile = 0.6
+            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] *percentile)
 
         # Sorted list of candidates
         candidates = []
