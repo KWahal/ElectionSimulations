@@ -23,10 +23,10 @@ def getVoterProportions(prefixSum, candidates):
     proportions = []
 
     for i, candidate in enumerate(candidates):
-        rightBound = round((candidate + candidates[i + 1]) / 2
-                           if i != len(candidates) - 1 else len(prefixSum) - 1)
+        rightBound = round(((candidate + candidates[i + 1]) / 2) 
+                           if (i != len(candidates) - 1) else (len(prefixSum) - 1))
         proportions.append(prefixSum[rightBound] - prefixSum[leftBound])
-        leftBound = rightBound + 1
+        leftBound = rightBound
 
     return proportions
 
@@ -42,7 +42,7 @@ def findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCa
         winners.append(findSimpleElectionWinnerValue(prefixSum[:medianLoc], candidates[:leftCandidates]))
 
     if rightCandidates > 0:
-        winners.append(medianLoc + findSimpleElectionWinnerValue(prefixSum[medianLoc + 1:],
+        winners.append(medianLoc + findSimpleElectionWinnerValue(prefixSum[medianLoc:],
                                                                  [candidate - medianLoc for candidate in candidates[leftCandidates:]]))
 
     if len(winners) == 1:
@@ -82,7 +82,7 @@ def uniformDistribution():
     return lambda distribution: uniform.pdf(distribution)
 
 
-def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, graphSections=NUM_GRAPH_SECTIONS,
+def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, graphSections=NUM_GRAPH_SECTIONS,
                                  numCandidates=NUM_CANDIDATES, randomizeCandidates=RANDOMIZE_CANDIDATES,
                                  leftCandidates=LEFT_CANDIDATES, rightCandidates=RIGHT_CANDIDATES, isNormal=True,
                                  distributionToUse=normalDistribution, recreateDistribution=False, trialsPerRecreation=100):
@@ -108,9 +108,8 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, graphSection
 
             prefixSum = np.append([0], np.cumsum(intervalHeights))
 
-            # Percentile represents district tilt
-            percentile = 0.5
-            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] * percentile)
+            # Tilt represents district tilt (0.5 is median)
+            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
 
         # Sorted list of candidates
         candidates = []

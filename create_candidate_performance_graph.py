@@ -91,9 +91,7 @@ def create_full_graph():
     plt.savefig('all_graphs.png')
     plt.show()
 
-DISTS_TO_CREATE = 500
-RUNS_PER_DIST = 5
-def create_overall_spline_graph():
+def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5):
     tied = []
     betterOrEqual = []
     vals = []
@@ -102,34 +100,33 @@ def create_overall_spline_graph():
         better_or_equal_candidate_specific = 0
         tied_candidate_specific = 0
 
-        totalNumTrials = DISTS_TO_CREATE * RUNS_PER_DIST
+        totalNumTrials = distsToCreate * runsPerDist
         CES, RCV = dist.runGeneralDistributionVoters(trials=totalNumTrials, numCandidates=i, isNormal=False, graphSections=500000,
                                                     distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
                                                     trialsPerRecreation=5)
 
-        for i in range(len(CES)):
-            if RCV[i] <= CES[i]:
+        for j in range(len(CES)):
+            if RCV[j] <= CES[j]:
                 better_or_equal_candidate_specific += 1
-            if RCV[i] == CES[i]:
+            if RCV[j] == CES[j]:
                 tied_candidate_specific += 1
 
-       # total = len(CES)
-      #  tied.append(float(on) / total)
-      #  betterOrEqual.append((below + on) / float(total))
         vals.append(i)
 
         betterOrEqual.append((better_or_equal_candidate_specific/totalNumTrials))
         tied.append(tied_candidate_specific/totalNumTrials)
-        print(betterOrEqual)
-        print(tied)
 
-        print(f'For {i} candidates, RCV is better or equal {betterOrEqual[i-3]} percent of the time')
+        print(f'For {i} candidates, RCV is better or equal {betterOrEqual[-1]} percent of the time')
         print(f'Computed stats for {i}')
 
     plt.xlabel("Number of Candidates in Election")
     plt.ylabel("Share of Elections")
 
     #gray #333333
+
+    # Print results
+    print(betterOrEqual)
+    print(tied)
 
     color_one = "#E39FF6"
     color_two = "#9867C5"
@@ -144,6 +141,6 @@ def create_overall_spline_graph():
     # plt.scatter(vals, tied, label="Tied", color=color_two)
     plt.legend()
     plt.show()
-    plt.savefig('spline_graph_test.png')
+    plt.savefig('spline_graph_test0.png')
 
-create_overall_spline_graph()
+create_overall_spline_graph(distsToCreate=5000)
