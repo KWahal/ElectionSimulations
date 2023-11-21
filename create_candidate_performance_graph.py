@@ -141,6 +141,6 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5):
     # plt.scatter(vals, tied, label="Tied", color=color_two)
     plt.legend()
     plt.show()
-    plt.savefig('spline_graph_test0.png')
+    plt.savefig('Overall Spline Graph 10k Trials Per.png')
 
-create_overall_spline_graph(distsToCreate=5000)
+create_overall_spline_graph(distsToCreate=10000)
