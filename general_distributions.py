@@ -63,6 +63,32 @@ def findRCVWinnerValue(prefixSum, candidates):
     del candidates[np.argmin(proportions)]
     return findRCVWinnerValue(prefixSum, candidates)
 
+def findAlaskaWinnerValue(prefixSum, candidates):
+    if len(candidates) == 1:
+        return candidates[0]
+
+    proportions = np.array(getVoterProportions(prefixSum, candidates))
+    num_top_candidates = min(4, len(candidates))  # Ensure we don't exceed the number of candidates
+    top_candidates = candidates[np.argsort(proportions)[-num_top_candidates:]][::-1]
+    
+    return findRCVWinnerValue(prefixSum, top_candidates)
+
+def findNYCWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates):
+    winners = []
+    if leftCandidates > 0:
+        winners.append(findRCVWinnerValue(prefixSum[:medianLoc], candidates[:leftCandidates]))
+
+    if rightCandidates > 0:
+        winners.append(medianLoc + findRCVWinnerValue(prefixSum[medianLoc:],
+                                                                 [candidate - medianLoc for candidate in candidates[leftCandidates:]]))
+
+    if len(winners) == 1:
+        return winners[0]
+
+    proportions = getVoterProportions(prefixSum, winners)
+
+    return winners[0] if proportions[0] >= proportions[1] else winners[1]
+
 
 def randomSplineDistribution():
     xValues = np.linspace(0, 1, num=NUM_SPLINE_SECTIONS)
