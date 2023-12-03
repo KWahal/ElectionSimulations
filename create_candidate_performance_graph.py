@@ -4,6 +4,7 @@ from spline_graphs import run_spline_dist
 import matplotlib.pyplot as plt
 import general_distributions as dist
 from tqdm import tqdm
+import threading
 
 def create_one_graph():
     tied = []
@@ -91,29 +92,64 @@ def create_full_graph():
     plt.savefig('all_graphs.png')
     plt.show()
 
-def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5):
+def run_portion_of_trials(trials, numCandidates, graphSections, trialsPerRecreation,
+                          tilt, better_or_equal_list, tied_candidate_list):
+    # Run a portion of the trials
+    ces, rcv = dist.runGeneralDistributionVoters(trials=trials, numCandidates=numCandidates, isNormal=False, graphSections=graphSections,
+                                                 distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
+                                                 trialsPerRecreation=trialsPerRecreation, tilt=tilt)
+    
+    # Calculate how many are better or equal and how many are tied
+    better_or_equal_candidate_specific = 0
+    tied_candidate_specific = 0
+
+    for j in range(len(ces)):
+        if rcv[j] <= ces[j]:
+            better_or_equal_candidate_specific += 1
+        if rcv[j] == ces[j]:
+            tied_candidate_specific += 1
+    
+    # Add the value to the list so they can be accessed once all trials have been run
+    better_or_equal_list.append(better_or_equal_candidate_specific)
+    tied_candidate_list.append(tied_candidate_specific)
+
+GRAPH_SECTIONS = 100000
+def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, numThreads=1):
+    totalNumTrials = distsToCreate * runsPerDist
+
     tied = []
     betterOrEqual = []
     vals = []
 
     for i in tqdm(range(3, 101)):
-        better_or_equal_candidate_specific = 0
-        tied_candidate_specific = 0
+        # Create lists for how many trials resulted in better or tied outcomes
+        better_or_equal_list = []
+        tied_candidate_list = []
 
-        totalNumTrials = distsToCreate * runsPerDist
-        CES, RCV = dist.runGeneralDistributionVoters(trials=totalNumTrials, numCandidates=i, isNormal=False, graphSections=500000,
-                                                    distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
-                                                    trialsPerRecreation=5)
+        # Create threads
+        threads = []
+        trialsPerThread = totalNumTrials // numThreads
+        totalNumTrials = trialsPerThread * numThreads
 
-        for j in range(len(CES)):
-            if RCV[j] <= CES[j]:
-                better_or_equal_candidate_specific += 1
-            if RCV[j] == CES[j]:
-                tied_candidate_specific += 1
+        for _ in range(numThreads):
+            threads.append(threading.Thread(target=run_portion_of_trials, args=(trialsPerThread, i, GRAPH_SECTIONS, runsPerDist, tilt,
+                                                                                better_or_equal_list, tied_candidate_list)))
+        
+        # Start each thread then wait for all to finish
+        for t in threads:
+            t.start()
+        
+        for t in threads:
+            t.join()
 
+        # Reconstruct better or equal and tied info
+        better_or_equal_candidate_specific = sum(better_or_equal_list)
+        tied_candidate_specific = sum(tied_candidate_list)
+
+        # Update with information from this trial
         vals.append(i)
 
-        betterOrEqual.append((better_or_equal_candidate_specific/totalNumTrials))
+        betterOrEqual.append(better_or_equal_candidate_specific/totalNumTrials)
         tied.append(tied_candidate_specific/totalNumTrials)
 
         print(f'For {i} candidates, RCV is better or equal {betterOrEqual[-1]} percent of the time')
@@ -141,6 +177,12 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5):
     # plt.scatter(vals, tied, label="Tied", color=color_two)
     plt.legend()
     plt.show()
-    plt.savefig('Overall Spline Graph 10k Trials Per.png')
+    plt.savefig(f'Overall_spline_graph_{distsToCreate}_trials_tilt_{tilt}.png')
 
-create_overall_spline_graph(distsToCreate=10000)
+def create_tilt_graphs():
+    for mult in range(6):
+        tilt = 0.5 + 0.1 * mult
+        create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=16)
+
+# create_overall_spline_graph(distsToCreate=10000)
+create_tilt_graphs()
