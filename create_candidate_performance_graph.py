@@ -113,7 +113,7 @@ def run_portion_of_trials(trials, numCandidates, graphSections, trialsPerRecreat
     better_or_equal_list.append(better_or_equal_candidate_specific)
     tied_candidate_list.append(tied_candidate_specific)
 
-GRAPH_SECTIONS = 100000
+GRAPH_SECTIONS = 50000
 def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, numThreads=1):
     totalNumTrials = distsToCreate * runsPerDist
 
@@ -183,7 +183,7 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
 def create_tilt_graphs():
     for mult in range(6):
         tilt = 0.5 + 0.1 * mult
-        create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=128)
+        create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=64)
 
 # create_overall_spline_graph(distsToCreate=10000)
 create_tilt_graphs()
