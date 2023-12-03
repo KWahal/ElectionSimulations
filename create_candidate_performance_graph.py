@@ -178,6 +178,7 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
     plt.legend()
     plt.show()
     plt.savefig(f'Overall_spline_graph_{distsToCreate}_trials_tilt_{tilt}.png')
+    plt.clf()
 
 def create_tilt_graphs():
     for mult in range(6):
