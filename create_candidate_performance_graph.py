@@ -181,9 +181,9 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
     plt.clf()
 
 def create_tilt_graphs():
-    for mult in range(6):
-        tilt = 0.5 + 0.1 * mult
-        create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=64)
+    for mult in range(2):
+        tilt = 0.9 + 0.1 * mult
+        create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=32)
 
 # create_overall_spline_graph(distsToCreate=10000)
 create_tilt_graphs()
