@@ -185,5 +185,21 @@ def create_tilt_graphs():
         tilt = 0.9 + 0.1 * mult
         create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=32)
 
+def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):
+    results = [[] for _ in range(4)]
+    totalTrials = distsToCreate * runsPerDist
+    
+    for i in tqdm(range(3, 101)):
+        data = dist.runGeneralDistributionVoters(trials=totalTrials, numCandidates=i, isNormal=False, graphSections=GRAPH_SECTIONS,
+                                                 distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
+                                                 trialsPerRecreation=runsPerDist, runOtherVotingMethods=True)
+        
+        for j in range(4):
+            extremism = data[j]
+            results[j].append(sum(extremism) / len(extremism))
+    
+    print(results)
+
 # create_overall_spline_graph(distsToCreate=10000)
-create_tilt_graphs()
+# create_tilt_graphs()
+run_all_voting_methods(10000)

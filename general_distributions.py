@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from tqdm import tqdm
+import copy
 
 RANDOMIZE_CANDIDATES = True
 NUM_CANDIDATES = 4
@@ -69,12 +70,16 @@ def findAlaskaWinnerValue(prefixSum, candidates):
 
     proportions = np.array(getVoterProportions(prefixSum, candidates))
     num_top_candidates = min(4, len(candidates))  # Ensure we don't exceed the number of candidates
-    top_candidates = candidates[np.argsort(proportions)[-num_top_candidates:]][::-1]
+
+    top_candidate_inds = np.argsort(proportions)[-num_top_candidates:]
+    top_candidates = [candidates[i] for i in top_candidate_inds]
+    top_candidates.sort()
     
     return findRCVWinnerValue(prefixSum, top_candidates)
 
 def findNYCWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates):
     winners = []
+
     if leftCandidates > 0:
         winners.append(findRCVWinnerValue(prefixSum[:medianLoc], candidates[:leftCandidates]))
 
@@ -111,9 +116,14 @@ def uniformDistribution():
 def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, graphSections=NUM_GRAPH_SECTIONS,
                                  numCandidates=NUM_CANDIDATES, randomizeCandidates=RANDOMIZE_CANDIDATES,
                                  leftCandidates=LEFT_CANDIDATES, rightCandidates=RIGHT_CANDIDATES, isNormal=True,
-                                 distributionToUse=normalDistribution, recreateDistribution=False, trialsPerRecreation=100):
+                                 distributionToUse=normalDistribution, recreateDistribution=False, trialsPerRecreation=100,
+                                 runOtherVotingMethods=False):
     CESPolarization = []
     RCVPolarization = []
+
+    if runOtherVotingMethods:
+        alaskaPolarization = []
+        NYCPolarization = []
 
     if isNormal:
         distribution = distributionToUse(dLoc=loc, dScale=scale)
@@ -172,11 +182,21 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
 
         # Find election winners
         CESWinner = findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates)
-        RCVWinner = findRCVWinnerValue(prefixSum, candidates)
+        RCVWinner = findRCVWinnerValue(prefixSum, copy.copy(candidates))
 
         CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / graphSections)
         RCVPolarization.append(abs(RCVWinner - medianLoc) * GRAPH_SCALE / graphSections)
 
+        if runOtherVotingMethods:
+            alaskaWinner = findAlaskaWinnerValue(prefixSum, candidates)
+            NYCWinner = findNYCWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates)
+
+            alaskaPolarization.append(abs(alaskaWinner - medianLoc) * GRAPH_SCALE / graphSections)
+            NYCPolarization.append(abs(NYCWinner - medianLoc) * GRAPH_SCALE / graphSections)
+
+    if runOtherVotingMethods:
+        return CESPolarization, RCVPolarization, alaskaPolarization, NYCPolarization
+    
     return CESPolarization, RCVPolarization
 
 
