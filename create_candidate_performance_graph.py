@@ -202,4 +202,5 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):
 
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
-run_all_voting_methods(10000)
+if __name__ == "__main__":
+    run_all_voting_methods(10000)
