@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import general_distributions as dist
 from tqdm import tqdm
 import threading
+import numpy as np
 
 def create_one_graph():
     tied = []
@@ -186,7 +187,7 @@ def create_tilt_graphs():
         create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=32)
 
 def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):
-    results = [[] for _ in range(4)]
+    results = []
     totalTrials = distsToCreate * runsPerDist
     
     for i in tqdm(range(3, 101)):
@@ -194,12 +195,12 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):
                                                  distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
                                                  trialsPerRecreation=runsPerDist, runOtherVotingMethods=True)
         
-        for j in range(4):
-            extremism = data[j]
-            results[j].append(sum(extremism) / len(extremism))
+        results.append(list(data))
     
-    print(results)
-
+    # Create numpt arr from results and print to csv
+    arr = np.array(results)
+    np.save('voting_variations_output.npy', arr)
+    
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
 if __name__ == "__main__":
