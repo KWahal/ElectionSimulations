@@ -182,8 +182,13 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
     plt.clf()
 
 def create_tilt_graphs():
-    for mult in range(2):
-        tilt = 0.9 + 0.1 * mult
+    for mult in range(3):
+        tilt = 0.5 + 0.1 * mult
+        create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=32)
+    
+def create_lower_tilt_graphs():
+    for mult in range(3):
+        tilt = 0.8 + 0.1 * mult
         create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=32)
 
 def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):

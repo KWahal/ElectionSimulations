@@ -1,0 +1,2 @@
+import create_candidate_performance_graph
+create_candidate_performance_graph.create_lower_tilt_graphs()
