@@ -37,14 +37,14 @@ def findSimpleElectionWinnerValue(prefixSum, candidates):
     return candidates[np.argmax(proportions)]
 
 
-def findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates):
+def findCESWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates):
     winners = []
     if leftCandidates > 0:
-        winners.append(findSimpleElectionWinnerValue(prefixSum[:medianLoc], candidates[:leftCandidates]))
+        winners.append(findSimpleElectionWinnerValue(prefixSum[:indiffLoc], candidates[:leftCandidates]))
 
     if rightCandidates > 0:
-        winners.append(medianLoc + findSimpleElectionWinnerValue(prefixSum[medianLoc:],
-                                                                 [candidate - medianLoc for candidate in candidates[leftCandidates:]]))
+        winners.append(indiffLoc + findSimpleElectionWinnerValue(prefixSum[indiffLoc:],
+                                                                 [candidate - indiffLoc for candidate in candidates[leftCandidates:]]))
 
     if len(winners) == 1:
         return winners[0]
@@ -77,15 +77,15 @@ def findAlaskaWinnerValue(prefixSum, candidates):
     
     return findRCVWinnerValue(prefixSum, top_candidates)
 
-def findNYCWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates):
+def findNYCWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates):
     winners = []
 
     if leftCandidates > 0:
-        winners.append(findRCVWinnerValue(prefixSum[:medianLoc], candidates[:leftCandidates]))
+        winners.append(findRCVWinnerValue(prefixSum[:indiffLoc], candidates[:leftCandidates]))
 
     if rightCandidates > 0:
-        winners.append(medianLoc + findRCVWinnerValue(prefixSum[medianLoc:],
-                                                                 [candidate - medianLoc for candidate in candidates[leftCandidates:]]))
+        winners.append(indiffLoc + findRCVWinnerValue(prefixSum[indiffLoc:],
+                                                                 [candidate - indiffLoc for candidate in candidates[leftCandidates:]]))
 
     if len(winners) == 1:
         return winners[0]
@@ -134,6 +134,8 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
     intervalHeights = distribution(intervals)
 
     prefixSum = np.append([0], np.cumsum(intervalHeights))
+    # Location of the indifferent voter
+    indiffLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
     medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
 
     for trial in range(trials):
@@ -145,7 +147,8 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
             prefixSum = np.append([0], np.cumsum(intervalHeights))
 
             # Tilt represents district tilt (0.5 is median)
-            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
+            indiffLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
+            medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
 
         # Sorted list of candidates
         candidates = []
@@ -156,7 +159,7 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
                 randomCandidate = random.randint(0, math.floor(prefixSum[-1]) * 5000) / 5000.
                 candidateLocation = np.searchsorted(prefixSum, randomCandidate)
 
-                if candidateLocation != medianLoc:
+                if candidateLocation != indiffLoc:
                     candidates.append(candidateLocation)
 
             candidates.sort()
@@ -165,23 +168,23 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
             leftCandidates = 0
             rightCandidates = 0
             for candidate in candidates:
-                if candidate < medianLoc:
+                if candidate < indiffLoc:
                     leftCandidates += 1
                 else:
                     rightCandidates += 1
         else:
             # Generate random left candidates
             while len(candidates) < leftCandidates:
-                candidates.append(random.randrange(1, medianLoc))
+                candidates.append(random.randrange(1, indiffLoc))
 
             # Generate random right candidates
             while len(candidates) < rightCandidates:
-                candidates.append(random.randrange(medianLoc + 1, graphSections))
+                candidates.append(random.randrange(indiffLoc + 1, graphSections))
 
             candidates.sort()
 
         # Find election winners
-        CESWinner = findCESWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates)
+        CESWinner = findCESWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates)
         RCVWinner = findRCVWinnerValue(prefixSum, copy.copy(candidates))
 
         CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / graphSections)
@@ -189,7 +192,7 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
 
         if runOtherVotingMethods:
             alaskaWinner = findAlaskaWinnerValue(prefixSum, candidates)
-            NYCWinner = findNYCWinnerValue(prefixSum, medianLoc, candidates, leftCandidates, rightCandidates)
+            NYCWinner = findNYCWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates)
 
             alaskaPolarization.append(abs(alaskaWinner - medianLoc) * GRAPH_SCALE / graphSections)
             NYCPolarization.append(abs(NYCWinner - medianLoc) * GRAPH_SCALE / graphSections)
