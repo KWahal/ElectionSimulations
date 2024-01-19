@@ -225,4 +225,4 @@ def run_closed_variations(distsToCreate=5000, runsPerDist=5):
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
 if __name__ == "__main__":
-    run_closed_variations(10, 1)
+    run_closed_variations(10000)
