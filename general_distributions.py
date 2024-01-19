@@ -160,10 +160,6 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
 
     prefixSum = np.append([0], np.cumsum(intervalHeights))
 
-    if runClosed:
-        maxRightBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[0])
-        leftBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[1])
-
     # Location of the indifferent voter
     indiffLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
     medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
@@ -179,6 +175,10 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
             # Tilt represents district tilt (0.5 is median)
             indiffLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
             medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
+
+            if runClosed:
+                maxRightBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[0])
+                leftBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[1])
 
         # Sorted list of candidates
         candidates = []
@@ -259,4 +259,4 @@ def runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=500000):
     print(f'Percentage of trials with better RCV Performance: {100 * float(numGreater) / len(CESPolarization)}')
 
 
-runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=10000)
+# runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=10000)
