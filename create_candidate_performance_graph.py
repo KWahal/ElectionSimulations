@@ -94,38 +94,38 @@ def create_full_graph():
     plt.show()
 
 def run_portion_of_trials(trials, numCandidates, graphSections, trialsPerRecreation,
-                          tilt, better_or_equal_list, tied_candidate_list):
+                          tilt, better_or_equal_list, better_candidate_list, independentRegions=(0.5, 0.5)):
     # Run a portion of the trials
     ces, rcv = dist.runGeneralDistributionVoters(trials=trials, numCandidates=numCandidates, isNormal=False, graphSections=graphSections,
                                                  distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
-                                                 trialsPerRecreation=trialsPerRecreation, tilt=tilt)
+                                                 trialsPerRecreation=trialsPerRecreation, tilt=tilt, independentRegions=independentRegions)
     
     # Calculate how many are better or equal and how many are tied
     better_or_equal_candidate_specific = 0
-    tied_candidate_specific = 0
+    better_candidate_specific = 0
 
     for j in range(len(ces)):
         if rcv[j] <= ces[j]:
             better_or_equal_candidate_specific += 1
-        if rcv[j] == ces[j]:
-            tied_candidate_specific += 1
+        if rcv[j] < ces[j]:
+            better_candidate_specific += 1
     
     # Add the value to the list so they can be accessed once all trials have been run
     better_or_equal_list.append(better_or_equal_candidate_specific)
-    tied_candidate_list.append(tied_candidate_specific)
+    better_candidate_list.append(better_candidate_specific)
 
 GRAPH_SECTIONS = 50000
 def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, numThreads=1):
     totalNumTrials = distsToCreate * runsPerDist
 
-    tied = []
+    better = []
     betterOrEqual = []
     vals = []
 
     for i in tqdm(range(3, 101)):
         # Create lists for how many trials resulted in better or tied outcomes
         better_or_equal_list = []
-        tied_candidate_list = []
+        better_candidate_list = []
 
         # Create threads
         threads = []
@@ -134,7 +134,7 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
 
         for _ in range(numThreads):
             threads.append(threading.Thread(target=run_portion_of_trials, args=(trialsPerThread, i, GRAPH_SECTIONS, runsPerDist, tilt,
-                                                                                better_or_equal_list, tied_candidate_list)))
+                                                                                better_or_equal_list, better_candidate_list)))
         
         # Start each thread then wait for all to finish
         for t in threads:
@@ -145,13 +145,13 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
 
         # Reconstruct better or equal and tied info
         better_or_equal_candidate_specific = sum(better_or_equal_list)
-        tied_candidate_specific = sum(tied_candidate_list)
+        better_candidate_specific = sum(better_candidate_list)
 
         # Update with information from this trial
         vals.append(i)
 
         betterOrEqual.append(better_or_equal_candidate_specific/totalNumTrials)
-        tied.append(tied_candidate_specific/totalNumTrials)
+        better.append(better_candidate_specific/totalNumTrials)
 
         print(f'For {i} candidates, RCV is better or equal {betterOrEqual[-1]} percent of the time')
         print(f'Computed stats for {i}')
@@ -163,19 +163,17 @@ def create_overall_spline_graph(distsToCreate=5000, runsPerDist=5, tilt=0.5, num
 
     # Print results
     print(betterOrEqual)
-    print(tied)
+    print(better)
 
     color_one = "#E39FF6"
     color_two = "#9867C5"
 
     plt.fill_between(vals, betterOrEqual, color=color_one, alpha=0.4, label="No Worse")
-    plt.fill_between(vals, tied, color=color_two, alpha=0.6, label="Tied")
+    plt.fill_between(vals, better, color=color_two, alpha=0.6, label="Better")
 
     plt.scatter(vals, betterOrEqual, color=color_one)
-    plt.scatter(vals, tied, color=color_two)
+    plt.scatter(vals, better, color=color_two)
 
-    # plt.scatter(vals, betterOrEqual, label="No Worse", color=color_one)
-    # plt.scatter(vals, tied, label="Tied", color=color_two)
     plt.legend()
     plt.show()
     plt.savefig(f'Overall_spline_graph_{distsToCreate}_trials_tilt_{tilt}.png')
@@ -205,6 +203,24 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):
     # Create numpt arr from results and print to csv
     arr = np.array(results)
     np.save('voting_variations_output.npy', arr)
+
+def run_closed_variations(distsToCreate=5000, runsPerDist=5):
+    totalTrials = distsToCreate * runsPerDist
+
+    for a in [0.2, 0.4]:
+        for b in [0.6, 0.8]:
+            results = []
+
+            for i in tqdm(range(3, 101)):
+                data = dist.runGeneralDistributionVoters(trials=totalTrials, numCandidates=i, isNormal=False, graphSections=GRAPH_SECTIONS,
+                                                        distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
+                                                        trialsPerRecreation=runsPerDist, runClosed=True, independentRegions=(a, b))
+                
+                results.append(list(data))
+
+            # Create numpt arr from results and print to csv
+            arr = np.array(results)
+            np.save(f'voting_output_{a}_{b}.npy', arr)
     
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()

@@ -19,32 +19,52 @@ NUM_SPLINE_SECTIONS = 10
 GRAPH_SCALE = 1
 
 
-def getVoterProportions(prefixSum, candidates):
-    leftBound = 0
+def getVoterProportions(prefixSum, candidates, leftBound=None, maxRightBound=None):
+    # Setup leftBound + maxRightBound if necessary
+    if maxRightBound == None:
+        maxRightBound = len(prefixSum)
+    
+    if leftBound == None:
+        leftBound = 0
+
     proportions = []
 
     for i, candidate in enumerate(candidates):
-        rightBound = round(((candidate + candidates[i + 1]) / 2) 
+        rightBound = round(((candidate + candidates[i + 1]) / 2)
                            if (i != len(candidates) - 1) else (len(prefixSum) - 1))
-        proportions.append(prefixSum[rightBound] - prefixSum[leftBound])
-        leftBound = rightBound
+        rightBound = min(rightBound, maxRightBound)
+
+        if rightBound > leftBound:
+            proportions.append(prefixSum[rightBound] - prefixSum[leftBound])
+        else:
+            proportions.append(0)
+        
+        leftBound = max(leftBound, rightBound)
 
     return proportions
 
 
-def findSimpleElectionWinnerValue(prefixSum, candidates):
-    proportions = np.array(getVoterProportions(prefixSum, candidates))
+def findSimpleElectionWinnerValue(prefixSum, candidates, leftBound=None, maxRightBound=None):
+    proportions = np.array(getVoterProportions(prefixSum, candidates, leftBound=leftBound, maxRightBound=maxRightBound))
     return candidates[np.argmax(proportions)]
 
 
-def findCESWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates):
+def findCESWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates, leftBound=None, maxRightBound=None):
+    if leftBound == None:
+        leftBound = indiffLoc
+    
+    if maxRightBound == None:
+        maxRightBound = indiffLoc
+
     winners = []
     if leftCandidates > 0:
-        winners.append(findSimpleElectionWinnerValue(prefixSum[:indiffLoc], candidates[:leftCandidates]))
+        winners.append(findSimpleElectionWinnerValue(prefixSum[:indiffLoc], candidates[:leftCandidates],
+                                                     maxRightBound=maxRightBound))
 
     if rightCandidates > 0:
         winners.append(indiffLoc + findSimpleElectionWinnerValue(prefixSum[indiffLoc:],
-                                                                 [candidate - indiffLoc for candidate in candidates[leftCandidates:]]))
+                                                                 [candidate - indiffLoc for candidate in candidates[leftCandidates:]],
+                                                                 leftBound=leftBound - indiffLoc))
 
     if len(winners) == 1:
         return winners[0]
@@ -85,7 +105,7 @@ def findNYCWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCa
 
     if rightCandidates > 0:
         winners.append(indiffLoc + findRCVWinnerValue(prefixSum[indiffLoc:],
-                                                                 [candidate - indiffLoc for candidate in candidates[leftCandidates:]]))
+                                                      [candidate - indiffLoc for candidate in candidates[leftCandidates:]]))
 
     if len(winners) == 1:
         return winners[0]
@@ -117,13 +137,18 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
                                  numCandidates=NUM_CANDIDATES, randomizeCandidates=RANDOMIZE_CANDIDATES,
                                  leftCandidates=LEFT_CANDIDATES, rightCandidates=RIGHT_CANDIDATES, isNormal=True,
                                  distributionToUse=normalDistribution, recreateDistribution=False, trialsPerRecreation=100,
-                                 runOtherVotingMethods=False):
+                                 runOtherVotingMethods=False, runClosed=False, independentRegions=(0.5, 0.5)):
+    # Don't use other voting methods + closed election at the same time
+    assert(not (runOtherVotingMethods and runClosed))
+    
     CESPolarization = []
     RCVPolarization = []
 
     if runOtherVotingMethods:
         alaskaPolarization = []
         NYCPolarization = []
+    elif runClosed:
+        CESClosedPolarization = []
 
     if isNormal:
         distribution = distributionToUse(dLoc=loc, dScale=scale)
@@ -134,6 +159,11 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
     intervalHeights = distribution(intervals)
 
     prefixSum = np.append([0], np.cumsum(intervalHeights))
+
+    if runClosed:
+        maxRightBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[0])
+        leftBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[1])
+
     # Location of the indifferent voter
     indiffLoc = np.searchsorted(prefixSum, prefixSum[-1] * tilt)
     medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
@@ -196,9 +226,14 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
 
             alaskaPolarization.append(abs(alaskaWinner - medianLoc) * GRAPH_SCALE / graphSections)
             NYCPolarization.append(abs(NYCWinner - medianLoc) * GRAPH_SCALE / graphSections)
+        elif runClosed:
+            CESClosedWinner = findCESWinnerValue(prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates, leftBound=leftBound, maxRightBound=maxRightBound)
+            CESClosedPolarization.append(abs(CESClosedWinner - medianLoc) * GRAPH_SCALE / graphSections)
 
     if runOtherVotingMethods:
         return CESPolarization, RCVPolarization, alaskaPolarization, NYCPolarization
+    elif runClosed:
+        return CESPolarization, RCVPolarization, CESClosedPolarization
     
     return CESPolarization, RCVPolarization
 
@@ -224,4 +259,4 @@ def runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=500000):
     print(f'Percentage of trials with better RCV Performance: {100 * float(numGreater) / len(CESPolarization)}')
 
 
-# runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=1000000)
+runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=10000)
