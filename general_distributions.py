@@ -177,6 +177,7 @@ def runGeneralDistributionVoters(loc=0.5, scale=0.2, trials=500000, tilt=0.5, gr
             medianLoc = np.searchsorted(prefixSum, prefixSum[-1] / 2)
 
             if runClosed:
+                independentRegions=(random.uniform(0, tilt), random.uniform(tilt, 1))
                 maxRightBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[0])
                 leftBound = np.searchsorted(prefixSum, prefixSum[-1] * independentRegions[1])
 

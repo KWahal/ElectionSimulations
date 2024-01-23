@@ -207,20 +207,18 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5):
 def run_closed_variations(distsToCreate=5000, runsPerDist=5):
     totalTrials = distsToCreate * runsPerDist
 
-    for a in [0.2, 0.4]:
-        for b in [0.6, 0.8]:
-            results = []
+    results = []
 
-            for i in tqdm(range(3, 101)):
-                data = dist.runGeneralDistributionVoters(trials=totalTrials, numCandidates=i, isNormal=False, graphSections=GRAPH_SECTIONS,
-                                                        distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
-                                                        trialsPerRecreation=runsPerDist, runClosed=True, independentRegions=(a, b))
-                
-                results.append(list(data))
+    for i in tqdm(range(3, 101)):
+        data = dist.runGeneralDistributionVoters(trials=totalTrials, numCandidates=i, isNormal=False, graphSections=GRAPH_SECTIONS,
+                                                distributionToUse=dist.randomSplineDistribution, recreateDistribution=True,
+                                                trialsPerRecreation=runsPerDist, runClosed=True, independentRegions=(0.5, 0.5))
+        
+        results.append(list(data))
 
-            # Create numpt arr from results and print to csv
-            arr = np.array(results)
-            np.save(f'voting_output_{a}_{b}.npy', arr)
+    # Create numpt arr from results and print to csv
+    arr = np.array(results)
+    np.save(f'voting_output_vary_indep.npy', arr)
     
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
