@@ -1,11 +1,10 @@
 from general_distributions import runGeneralDistributionVoters
 from candidate_graphs import computeStatistics
-from spline_graphs import run_spline_dist
 import matplotlib.pyplot as plt
 import general_distributions as dist
 from tqdm import tqdm
 import numpy as np
-from multiprocessing import Process, Queue
+from multiprocessing import Process, SimpleQueue
 import time
 
 
@@ -117,32 +116,18 @@ def create_full_graph():
 
 def run_portion_of_trials(results, **kwargs):
     # Run one trial and save the results
-    results.put_nowait(dist.runGeneralDistributionVoters(**kwargs))
+    results.put(dist.runGeneralDistributionVoters(**kwargs))
+    results.put(QUEUE_END)
     results.close()
-    results.join_thread()
 
 
 GRAPH_SECTIONS = 50000
 QUEUE_END = "END"
 
 
-def get_all_results(results):
-    # Add queue end sentinel
-    res = []
-    results.put(QUEUE_END)
-
-    for i in iter(results.get, QUEUE_END):
-        # Ignore any empty results
-        if i is not None:
-            res.append(i)
-
-    time.sleep(0.1)
-    return res
-
-
 def run_sim_multiprocessed(numThreads=1, **kwargs):
     # Store list of results
-    resultQueue = Queue()
+    resultQueue = SimpleQueue()
 
     # Create processes and update number of trials
     processes = []
@@ -161,11 +146,17 @@ def run_sim_multiprocessed(numThreads=1, **kwargs):
     for t in processes:
         t.start()
 
-    for t in processes:
-        t.join()
-
     # Get all results and return them combined
-    results = get_all_results(resultQueue)
+    results = []
+    doneCnt = 0
+    while doneCnt < numThreads:
+        res = resultQueue.get()
+
+        if res == QUEUE_END:
+            doneCnt += 1
+        else:
+            results.append(res)
+
     combResults = [[] for _ in range(len(results[0]))]
     for res in results:
         for i, vals in enumerate(res):
@@ -175,6 +166,7 @@ def run_sim_multiprocessed(numThreads=1, **kwargs):
         assert len(res) == kwargs["trials"] * numThreads
 
     return tuple(combResults)
+
 
 def create_overall_spline_graph(
     distsToCreate=5000, runsPerDist=5, tilt=0.5, numThreads=1
@@ -191,7 +183,7 @@ def create_overall_spline_graph(
             trials=totalNumTrials,
             numCandidates=i,
             isNormal=False,
-            graphSections=100,
+            graphSections=GRAPH_SECTIONS,
             distributionToUse=dist.randomSplineDistribution,
             recreateDistribution=True,
             trialsPerRecreation=runsPerDist,
@@ -267,6 +259,7 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
             recreateDistribution=True,
             trialsPerRecreation=runsPerDist,
             runOtherVotingMethods=True,
+            alaskaCandRange=(2, 10)
         )
 
         results.append(list(data))
@@ -305,4 +298,6 @@ def run_closed_variations(distsToCreate=5000, runsPerDist=5, numThreads=32):
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
 if __name__ == "__main__":
-    create_overall_spline_graph(distsToCreate=200, runsPerDist=1, tilt=0.5, numThreads=32)
+    run_all_voting_methods(
+        distsToCreate=5000, runsPerDist=5, numThreads=32
+    )
