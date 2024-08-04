@@ -305,5 +305,4 @@ def run_closed_variations(distsToCreate=5000, runsPerDist=5, numThreads=32):
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
 if __name__ == "__main__":
-    # create_overall_spline_graph(distsToCreate=10, runsPerDist=1, tilt=0.5, numThreads=2)
-    run_all_voting_methods(10, 1, 8)
+    create_overall_spline_graph(distsToCreate=200, runsPerDist=1, tilt=0.5, numThreads=32)
