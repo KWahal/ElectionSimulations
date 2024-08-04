@@ -84,12 +84,12 @@ def findRCVWinnerValue(prefixSum, candidates):
     del candidates[np.argmin(proportions)]
     return findRCVWinnerValue(prefixSum, candidates)
 
-def findAlaskaWinnerValue(prefixSum, candidates):
+def findAlaskaWinnerValue(prefixSum, candidates, top_candidates=4):
     if len(candidates) == 1:
         return candidates[0]
 
     proportions = np.array(getVoterProportions(prefixSum, candidates))
-    num_top_candidates = min(4, len(candidates))  # Ensure we don't exceed the number of candidates
+    num_top_candidates = min(top_candidates, len(candidates))  # Ensure we don't exceed the number of candidates
 
     top_candidate_inds = np.argsort(proportions)[-num_top_candidates:]
     top_candidates = [candidates[i] for i in top_candidate_inds]
