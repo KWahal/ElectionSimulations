@@ -450,6 +450,3 @@ def runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=500000):
     print(
         f"Percentage of trials with better RCV Performance: {100 * float(numGreater) / len(CESPolarization)}"
     )
-
-
-# runAndShowGeneralDistributionVoters(nLoc=0.5, nScale=0.2, nTrials=10000)

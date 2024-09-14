@@ -295,7 +295,5 @@ def run_limited_votes_variations(distsToCreate=5000, runsPerDist=5, numThreads=3
     np.save("voting_variations_output.npy", arr)
 
 
-# create_overall_spline_graph(distsToCreate=10000)
-# create_tilt_graphs()
 if __name__ == "__main__":
     run_limited_votes_variations(distsToCreate=10000, runsPerDist=5, numThreads=32)
