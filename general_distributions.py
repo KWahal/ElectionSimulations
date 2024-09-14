@@ -101,15 +101,16 @@ def findCESWinnerValue(
     return winners[0] if proportions[0] >= proportions[1] else winners[1]
 
 
-def findRCVWinnerValue(prefixSum, candidates):
-    if len(candidates) == 1:
-        return candidates[0]
+def findRCVWinnerValue(prefixSum, originalCandiates):
+    candidates = copy.copy(originalCandiates)
 
-    proportions = np.array(getVoterProportions(prefixSum, candidates))
+    while len(candidates) > 1:
+        proportions = np.array(getVoterProportions(prefixSum, candidates))
 
-    # Remove lowest candidate
-    del candidates[np.argmin(proportions)]
-    return findRCVWinnerValue(prefixSum, candidates)
+        # Remove lowest candidate
+        del candidates[np.argmin(proportions)]
+
+    return candidates[0]
 
 
 def findAlaskaWinnerValue(prefixSum, candidates, topCandidates=4):
@@ -366,7 +367,7 @@ def runGeneralDistributionVoters(
         CESWinner = findCESWinnerValue(
             prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates
         )
-        RCVWinner = findRCVWinnerValue(prefixSum, copy.copy(candidates))
+        RCVWinner = findRCVWinnerValue(prefixSum, candidates)
 
         CESPolarization.append(abs(CESWinner - medianLoc) * GRAPH_SCALE / graphSections)
         RCVPolarization.append(abs(RCVWinner - medianLoc) * GRAPH_SCALE / graphSections)
