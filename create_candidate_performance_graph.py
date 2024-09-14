@@ -259,7 +259,7 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
             recreateDistribution=True,
             trialsPerRecreation=runsPerDist,
             runOtherVotingMethods=True,
-            alaskaCandRange=(2, 10)
+            alaskaCandRange=(2, 10),
         )
 
         results.append(list(data))
@@ -269,7 +269,7 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
     np.save("voting_variations_output.npy", arr)
 
 
-def run_closed_variations(distsToCreate=5000, runsPerDist=5, numThreads=32):
+def run_limited_votes_variations(distsToCreate=5000, runsPerDist=5, numThreads=32):
     totalTrials = distsToCreate * runsPerDist
 
     results = []
@@ -284,20 +284,18 @@ def run_closed_variations(distsToCreate=5000, runsPerDist=5, numThreads=32):
             distributionToUse=dist.randomSplineDistribution,
             recreateDistribution=True,
             trialsPerRecreation=runsPerDist,
-            runClosed=True,
             independentRegions=(0.5, 0.5),
+            runLimitedVotes=True,
         )
 
         results.append(list(data))
 
     # Create numpy arr from results and print to csv
     arr = np.array(results)
-    np.save("voting_output_vary_indep.npy", arr)
+    np.save("voting_variations_output.npy", arr)
 
 
 # create_overall_spline_graph(distsToCreate=10000)
 # create_tilt_graphs()
 if __name__ == "__main__":
-    run_all_voting_methods(
-        distsToCreate=5000, runsPerDist=5, numThreads=32
-    )
+    run_limited_votes_variations(distsToCreate=10000, runsPerDist=5, numThreads=32)

@@ -21,13 +21,14 @@ GRAPH_SCALE = 1
 def getVoterProportions(prefixSum, candidates, leftBound=None, maxRightBound=None):
     # Setup leftBound + maxRightBound if necessary
     if maxRightBound is None:
-        maxRightBound = len(prefixSum)
+        maxRightBound = len(prefixSum) - 1
 
     if leftBound is None:
         leftBound = 0
 
     proportions = []
 
+    # Bounds are exclusive on left and inclusive on right
     for i, candidate in enumerate(candidates):
         rightBound = round(
             ((candidate + candidates[i + 1]) / 2)
@@ -154,6 +155,93 @@ def findNYCWinnerValue(
     return winners[0] if proportions[0] >= proportions[1] else winners[1]
 
 
+# Returns the region of overlap or None if there is no overlap. Similar to RCV,
+# regions are exclusive on left and inclusive on the right.
+def getOverlappingRegion(left1, right1, left2, right2):
+    left = max(left1, left2)
+    right = min(right1, right2)
+    return (left, right) if right > left else None
+
+
+def removeCandidateFromRegions(prefixSum, candidates, candidateInd, regions):
+    leftBound = 0
+    if candidateInd > 0:
+        leftBound = round((candidates[candidateInd] + candidates[candidateInd - 1]) / 2)
+
+    rightBound = len(prefixSum) - 1
+    if candidateInd < len(candidates) - 1:
+        rightBound = round(
+            (candidates[candidateInd] + candidates[candidateInd + 1]) / 2
+        )
+
+    newRegions = []
+    for left, right, count in regions:
+        overlap = getOverlappingRegion(leftBound, rightBound, left, right)
+
+        if overlap is None:
+            newRegions.append((left, right, count))
+        else:
+            # Add leftover left region
+            if overlap[0] > left:
+                newRegions.append((left, overlap[0], count))
+
+            # Add updated region
+            if count > 1:
+                newRegions.append((overlap[0], overlap[1], count - 1))
+
+            # Add leftover right region
+            if overlap[1] < right:
+                newRegions.append((overlap[1], right, count))
+
+    return newRegions
+
+
+def getLimitedVotesVoterProportions(prefixSum, candidates, regions):
+    leftBound = 0
+    proportions = []
+
+    for i, candidate in enumerate(candidates):
+        rightBound = round(
+            ((candidate + candidates[i + 1]) / 2)
+            if (i != len(candidates) - 1)
+            else (len(prefixSum) - 1)
+        )
+
+        proportion = 0
+        for region in regions:
+            overlap = getOverlappingRegion(leftBound, rightBound, region[0], region[1])
+
+            if overlap is not None:
+                proportion += prefixSum[overlap[1]] - prefixSum[overlap[0]]
+
+        proportions.append(proportion)
+        leftBound = rightBound
+
+    return proportions
+
+
+def findRCVLimitedVotesWinner(prefixSum, originalCandidates, numVotes):
+    # Regions are in the form (left, right, votesLeftForRegion)
+    candidates = copy.copy(originalCandidates)
+    regions = [(0, len(prefixSum) - 1, numVotes)]
+
+    while len(candidates) > 1:
+        proportions = np.array(
+            getLimitedVotesVoterProportions(prefixSum, candidates, regions)
+        )
+        candidateInd = np.argmin(proportions)
+
+        # Update regions
+        regions = removeCandidateFromRegions(
+            prefixSum, candidates, candidateInd, regions
+        )
+
+        # Remove lowest candidate
+        del candidates[candidateInd]
+
+    return candidates[0]
+
+
 def randomSplineDistribution():
     xValues = np.linspace(0, 1, num=NUM_SPLINE_SECTIONS)
     yValues = np.random.rand(NUM_SPLINE_SECTIONS)
@@ -188,8 +276,10 @@ def runGeneralDistributionVoters(
     trialsPerRecreation=100,
     runOtherVotingMethods=False,
     runClosed=False,
+    runLimitedVotes=False,
     independentRegions=(0.5, 0.5),
     alaskaCandRange=(4, 5),  # range is inclusive on left and exclusive on right
+    limitedVotesRange=(2, 10),  # range is inclusive on left and exclusive on right
 ):
     CESPolarization = []
     RCVPolarization = []
@@ -200,6 +290,9 @@ def runGeneralDistributionVoters(
         NYCPolarization = []
     if runClosed:
         CESClosedPolarization = []
+    if runLimitedVotes:
+        # Setup to run all limited voter variants
+        limitedVotesPolarizations = [[] for _ in range(*limitedVotesRange)]
 
     if isNormal:
         distribution = distributionToUse(dLoc=loc, dScale=scale)
@@ -250,8 +343,6 @@ def runGeneralDistributionVoters(
                 if candidateLocation != indiffLoc:
                     candidates.append(candidateLocation)
 
-            candidates.sort()
-
             # Count left and right candidates
             leftCandidates = 0
             rightCandidates = 0
@@ -269,7 +360,7 @@ def runGeneralDistributionVoters(
             while len(candidates) < rightCandidates:
                 candidates.append(random.randrange(indiffLoc + 1, graphSections))
 
-            candidates.sort()
+        candidates.sort()
 
         # Find election winners
         CESWinner = findCESWinnerValue(
@@ -308,17 +399,29 @@ def runGeneralDistributionVoters(
             CESClosedPolarization.append(
                 abs(CESClosedWinner - medianLoc) * GRAPH_SCALE / graphSections
             )
+        if runLimitedVotes:
+            for i, numVotes in enumerate(range(*limitedVotesRange)):
+                limitedVotesWinner = findRCVLimitedVotesWinner(
+                    prefixSum, candidates, numVotes
+                )
+
+                limitedVotesPolarizations[i].append(
+                    abs(limitedVotesWinner - medianLoc) * GRAPH_SCALE / graphSections
+                )
 
     output = []
     output.append(CESPolarization)
     output.append(RCVPolarization)
 
     if runOtherVotingMethods:
-        # Add all alaska pols
+        # Add all alaska polarizations
         output += alaskaPolarizations
         output.append(NYCPolarization)
-    elif runClosed:
+    if runClosed:
         output.append(CESClosedPolarization)
+    if runLimitedVotes:
+        # Add all limited votes polarizations
+        output += limitedVotesPolarizations
 
     return tuple(output)
 
