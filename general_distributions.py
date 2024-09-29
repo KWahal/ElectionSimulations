@@ -201,6 +201,8 @@ def getLimitedVotesVoterProportions(prefixSum, candidates, regions):
     leftBound = 0
     proportions = []
 
+    regionInd = 0
+
     for i, candidate in enumerate(candidates):
         rightBound = round(
             ((candidate + candidates[i + 1]) / 2)
@@ -209,11 +211,17 @@ def getLimitedVotesVoterProportions(prefixSum, candidates, regions):
         )
 
         proportion = 0
-        for region in regions:
+        while regionInd < len(regions):
+            region = regions[regionInd]
             overlap = getOverlappingRegion(leftBound, rightBound, region[0], region[1])
 
             if overlap is not None:
                 proportion += prefixSum[overlap[1]] - prefixSum[overlap[0]]
+
+            if region[1] >= rightBound:
+                break
+
+            regionInd += 1
 
         proportions.append(proportion)
         leftBound = rightBound
@@ -282,6 +290,8 @@ def runGeneralDistributionVoters(
     alaskaCandRange=(4, 5),  # range is inclusive on left and exclusive on right
     limitedVotesRange=(2, 10),  # range is inclusive on left and exclusive on right
 ):
+    np.random.seed(NUM_CANDIDATES)
+    random.seed(NUM_CANDIDATES)
     CESPolarization = []
     RCVPolarization = []
 
