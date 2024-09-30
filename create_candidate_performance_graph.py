@@ -272,7 +272,7 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
     results = []
     totalTrials = distsToCreate * runsPerDist
 
-    for i in tqdm(range(3, 13)):
+    for i in tqdm(range(3, 101)):
         data = run_sim_multiprocessed(
             numThreads=numThreads,
             trials=totalTrials,
