@@ -152,7 +152,6 @@ def findNYCWinnerValue(
         return winners[0]
 
     proportions = getVoterProportions(prefixSum, winners)
-
     return winners[0] if proportions[0] >= proportions[1] else winners[1]
 
 
@@ -251,6 +250,37 @@ def findRCVLimitedVotesWinner(prefixSum, originalCandidates, numVotes):
     return candidates[0]
 
 
+def findNYCLimitedVotesWinner(
+    prefixSum, indiffLoc, candidates, leftCandidates, rightCandidates, numVotes
+):
+    winners = []
+
+    if leftCandidates > 0:
+        winners.append(
+            findRCVLimitedVotesWinner(
+                prefixSum[:indiffLoc],
+                candidates[:leftCandidates],
+                numVotes,
+            )
+        )
+
+    if rightCandidates > 0:
+        winners.append(
+            indiffLoc
+            + findRCVLimitedVotesWinner(
+                prefixSum[indiffLoc:],
+                [candidate - indiffLoc for candidate in candidates[leftCandidates:]],
+                numVotes,
+            )
+        )
+
+    if len(winners) == 1:
+        return winners[0]
+
+    proportions = getVoterProportions(prefixSum, winners)
+    return winners[0] if proportions[0] >= proportions[1] else winners[1]
+
+
 def randomSplineDistribution():
     xValues = np.linspace(0, 1, num=NUM_SPLINE_SECTIONS)
     yValues = np.random.rand(NUM_SPLINE_SECTIONS)
@@ -283,15 +313,13 @@ def runGeneralDistributionVoters(
     distributionToUse=normalDistribution,
     recreateDistribution=False,
     trialsPerRecreation=100,
-    runOtherVotingMethods=False,
-    runClosed=False,
-    runLimitedVotes=False,
+    runOtherVotingMethods=False, # Run alaska and NYC
+    alaskaCandRange=(2, 10),  # Range is inclusive on left and exclusive on right
+    runClosed=False, # Run with closed primaries
     independentRegions=(0.5, 0.5),
-    alaskaCandRange=(4, 5),  # range is inclusive on left and exclusive on right
-    limitedVotesRange=(2, 10),  # range is inclusive on left and exclusive on right
+    runLimitedVotes=False, # Run with limited number of votes
+    limitedVotesRange=(2, 10),  # Range is inclusive on left and exclusive on right
 ):
-    np.random.seed(NUM_CANDIDATES)
-    random.seed(NUM_CANDIDATES)
     CESPolarization = []
     RCVPolarization = []
 
@@ -303,7 +331,8 @@ def runGeneralDistributionVoters(
         CESClosedPolarization = []
     if runLimitedVotes:
         # Setup to run all limited voter variants
-        limitedVotesPolarizations = [[] for _ in range(*limitedVotesRange)]
+        RCVLimitedPolarizations = [[] for _ in range(*limitedVotesRange)]
+        NYCLimitedPolarizations = [[] for _ in range(*limitedVotesRange)]
 
     if isNormal:
         distribution = distributionToUse(dLoc=loc, dScale=scale)
@@ -412,12 +441,25 @@ def runGeneralDistributionVoters(
             )
         if runLimitedVotes:
             for i, numVotes in enumerate(range(*limitedVotesRange)):
-                limitedVotesWinner = findRCVLimitedVotesWinner(
+                RCVLimitedWinner = findRCVLimitedVotesWinner(
                     prefixSum, candidates, numVotes
                 )
 
-                limitedVotesPolarizations[i].append(
-                    abs(limitedVotesWinner - medianLoc) * GRAPH_SCALE / graphSections
+                RCVLimitedPolarizations[i].append(
+                    abs(RCVLimitedWinner - medianLoc) * GRAPH_SCALE / graphSections
+                )
+
+                NYCLimitedWinner = findNYCLimitedVotesWinner(
+                    prefixSum,
+                    indiffLoc,
+                    candidates,
+                    leftCandidates,
+                    rightCandidates,
+                    numVotes,
+                )
+
+                NYCLimitedPolarizations[i].append(
+                    abs(NYCLimitedWinner - medianLoc) * GRAPH_SCALE / graphSections
                 )
 
     output = []
@@ -432,7 +474,8 @@ def runGeneralDistributionVoters(
         output.append(CESClosedPolarization)
     if runLimitedVotes:
         # Add all limited votes polarizations
-        output += limitedVotesPolarizations
+        output += RCVLimitedPolarizations
+        output += NYCLimitedPolarizations
 
     return tuple(output)
 

@@ -244,35 +244,9 @@ def create_lower_tilt_graphs():
         create_overall_spline_graph(distsToCreate=10000, tilt=tilt, numThreads=32)
 
 
-def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
-    results = []
-    totalTrials = distsToCreate * runsPerDist
-
-    for i in tqdm(range(3, 101)):
-        data = run_sim_multiprocessed(
-            numThreads=numThreads,
-            trials=totalTrials,
-            numCandidates=i,
-            isNormal=False,
-            graphSections=GRAPH_SECTIONS,
-            distributionToUse=dist.randomSplineDistribution,
-            recreateDistribution=True,
-            trialsPerRecreation=runsPerDist,
-            runOtherVotingMethods=True,
-            alaskaCandRange=(2, 10),
-        )
-
-        results.append(list(data))
-
-    # Create numpy arr from results and print to csv
-    arr = np.array(results)
-    np.save("voting_variations_output.npy", arr)
-
-
 def run_limited_votes_variations(distsToCreate=5000, runsPerDist=5, numThreads=32):
-    totalTrials = distsToCreate * runsPerDist
-
     results = []
+    totalTrials = distsToCreate * runsPerDist
 
     for i in tqdm(range(3, 101)):
         data = run_sim_multiprocessed(
@@ -292,8 +266,31 @@ def run_limited_votes_variations(distsToCreate=5000, runsPerDist=5, numThreads=3
 
     # Create numpy arr from results and print to csv
     arr = np.array(results)
-    np.save("voting_variations_output.npy", arr)
+    np.save("limited_voting_variations_output.npy", arr)
 
+def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
+    results = []
+    totalTrials = distsToCreate * runsPerDist
+
+    for i in tqdm(range(3, 13)):
+        data = run_sim_multiprocessed(
+            numThreads=numThreads,
+            trials=totalTrials,
+            numCandidates=i,
+            isNormal=False,
+            graphSections=GRAPH_SECTIONS,
+            distributionToUse=dist.randomSplineDistribution,
+            recreateDistribution=True,
+            trialsPerRecreation=runsPerDist,
+            runOtherVotingMethods=True,
+            runLimitedVotes=True,
+        )
+
+        results.append(list(data))
+
+    # Create numpy arr from results and print to csv
+    arr = np.array(results)
+    np.save("all_voting_variations_output.npy", arr)
 
 if __name__ == "__main__":
-    run_limited_votes_variations(distsToCreate=10000, runsPerDist=5, numThreads=32)
+    run_all_voting_methods(distsToCreate=10000, runsPerDist=5, numThreads=32)
