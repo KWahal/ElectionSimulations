@@ -293,4 +293,4 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
     np.save("all_voting_variations_output.npy", arr)
 
 if __name__ == "__main__":
-    run_all_voting_methods(distsToCreate=100000, runsPerDist=5, numThreads=128)
+    run_all_voting_methods(distsToCreate=50000, runsPerDist=5, numThreads=128)
