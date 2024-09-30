@@ -121,7 +121,7 @@ def run_portion_of_trials(results, **kwargs):
     results.close()
 
 
-GRAPH_SECTIONS = 50000
+GRAPH_SECTIONS = 100000 # Previous: 50000
 QUEUE_END = "END"
 
 
@@ -293,4 +293,4 @@ def run_all_voting_methods(distsToCreate=5000, runsPerDist=5, numThreads=32):
     np.save("all_voting_variations_output.npy", arr)
 
 if __name__ == "__main__":
-    run_all_voting_methods(distsToCreate=200000, runsPerDist=5, numThreads=256)
+    run_all_voting_methods(distsToCreate=100000, runsPerDist=5, numThreads=256)
