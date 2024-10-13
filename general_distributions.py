@@ -319,6 +319,7 @@ def runGeneralDistributionVoters(
     independentRegions=(0.5, 0.5),
     runLimitedVotes=False, # Run with limited number of votes
     limitedVotesRange=(2, 10),  # Range is inclusive on left and exclusive on right
+    runSimpleElection=False, # Run simple plurality winner election
 ):
     CESPolarization = []
     RCVPolarization = []
@@ -333,6 +334,9 @@ def runGeneralDistributionVoters(
         # Setup to run all limited voter variants
         RCVLimitedPolarizations = [[] for _ in range(*limitedVotesRange)]
         NYCLimitedPolarizations = [[] for _ in range(*limitedVotesRange)]
+    if runSimpleElection:
+        # Setup to run simple election
+        simpleElectionPolarization = []
 
     if isNormal:
         distribution = distributionToUse(dLoc=loc, dScale=scale)
@@ -461,6 +465,9 @@ def runGeneralDistributionVoters(
                 NYCLimitedPolarizations[i].append(
                     abs(NYCLimitedWinner - medianLoc) * GRAPH_SCALE / graphSections
                 )
+        if runSimpleElection:
+            simpleElectionWinner = findSimpleElectionWinnerValue(prefixSum, candidates)
+            simpleElectionPolarization.append(abs(simpleElectionWinner - medianLoc) * GRAPH_SCALE / graphSections)
 
     output = []
     output.append(CESPolarization)
@@ -476,6 +483,8 @@ def runGeneralDistributionVoters(
         # Add all limited votes polarizations
         output += RCVLimitedPolarizations
         output += NYCLimitedPolarizations
+    if runSimpleElection:
+        output.append(simpleElectionPolarization)
 
     return tuple(output)
 
